@@ -49,8 +49,31 @@ Use 'mutate' to fix the column, as it contains non-numeric values
                 values_to = "Count")
   head(catch_long)
 ```
-"
+
+```{r}
+  catch_wide <- catch_long %>%
+    pivot_wider(names_from = Year,
+                values_from = Count)
+  head(catch_wide)
+```
+
+'rename' Count column to 'catch_thousand'
+```{r}
+  catch_long <- catch_long %>%
+    rename(catch_thousand = Count) %>%
+    mutate(catch = catch_thousand * 1000) %>%
+    select(-catch_thousand)
+  head(catch_long)
+```
 
 # Summarize data
+
+```{r}
+  mean_region <- catch_long %>%
+  group_by(Species) %>%
+  summarize(total_catch=sum(catch), catch_mean = mean(catch), num_obs=n())
+  head(mean_region)
+```
+
 
 # Join to a region table
