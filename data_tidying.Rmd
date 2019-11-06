@@ -71,9 +71,44 @@ Use 'mutate' to fix the column, as it contains non-numeric values
 ```{r}
   mean_region <- catch_long %>%
   group_by(Species) %>%
-  summarize(total_catch=sum(catch), catch_mean = mean(catch), num_obs=n())
+  summarize(total_catch=sum(catch), catch_mean = mean(catch), num_obs=n()) %>%
+  arrange(-total_catch)
   head(mean_region)
+```
+```{r}
+  total_species_pre_1900 <- catch_long %>%
+    filter(Year < 1900) %>%
+    group_by(Species) %>%
+    summarize(total = sum(catch)) %>%
+    arrange(desc(total))
+  head(total_species_pre_1900)
 ```
 
 
 # Join to a region table
+```{r}
+  region_defs <- read.csv(url("https://knb.ecoinformatics.org/knb/d1/mn/v2/object/df35b.303.1", method = "libcurl"), stringsAsFactors = F) %>%
+    select(code, mgmtArea)
+  head(region_defs)
+```
+```{r}
+  catch_joined <- left_join(catch_long, region_defs, 
+                            by = c("Region" = "code"))
+  head(catch_joined)
+```
+```{r}
+  site_codes <- data.frame(site=c("HAW-100",
+                                  "HAW-101",
+                                  "OAH-102",
+                                  "OAH-103",
+                                  "MAI-100"),
+                           stringsAsFactors = F)
+```
+separate island and site number string 'separate'
+```{r}
+  site_codes_split <- site_codes %>%
+    separate(site, into=c("island", "site_num"), sep="-", remove=F) %>%
+    unite(col=new_site, island, site_num, sep="_")
+  site_codes_split
+```
+
