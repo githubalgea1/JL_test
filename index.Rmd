@@ -26,6 +26,7 @@ An ordered list:
 
 - Data cleaning
 - [Analysis](EX01.html)
+- [Practice](plotting.html)
 - Discussion
 
 
