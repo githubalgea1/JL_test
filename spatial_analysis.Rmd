@@ -1,0 +1,107 @@
+---
+title: "Spatial analysis"
+author: "Jian Li"
+date: "11/8/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(sf)
+library(dplyr)
+library(ggplot2)
+library(leaflet)
+library(scales)
+library(ggmap)
+```
+
+# Read shapefile data
+  
+```{r}
+  ak_regions <- read_sf("data/shapefiles/ak_regions_simp.shp")
+  plot(ak_regions)
+  st_crs(ak_regions)
+  class(ak_regions)
+```
+```{r}
+  ak_regions_3338 <- ak_regions %>%
+    st_transform(crs = 3338)
+  st_crs(ak_regions_3338)
+  plot(ak_regions_3338)
+  summary(ak_regions_3338)
+  ak_regions_3338 %>% select(region)
+  class(ak_regions_3338)
+```
+```{r}
+  pop <- read.csv("data/shapefiles/alaska_population.csv", stringsAsFactors = F)
+
+  class(pop)
+```
+
+# Prepare the data
+
+Change to sf format
+```{r}
+  pop_4326 <- st_as_sf(pop,
+                       coords = c("lng", "lat"), 
+                       crs = 4326,
+                       remove = F)
+  st_crs(pop_4326)
+  head(pop_4326)
+```
+
+```{r}
+  pop_3338 <- st_transform(pop_4326, crs = 3338)
+  pop_joined <- st_join(pop_3338, ak_regions_3338, join = st_within)
+  head(pop_joined)
+```
+
+```{r}
+  pop_region <- pop_joined %>%
+    as.data.frame() %>%
+    group_by(region) %>%
+    summarize(totalpop = sum(population))
+  summary(pop_region)
+  pop_region
+```
+
+```{r}
+  pop_region_3338 <- left_join(ak_regions_3338, pop_region)
+  pop_region_3338
+  plot(pop_region_3338)
+```
+
+```{r}
+  pop_mgmt <- pop_region_3338 %>%
+    group_by(mgmt_area) %>%
+    summarize(totalpop = sum(totalpop), do_union = F)
+  plot(pop_mgmt)
+```
+
+
+# Make a map
+
+```{r}
+  rivers_3338 <- read_sf("data/shapefiles/ak_rivers_simp.shp")
+  st_crs(rivers_3338)
+```
+
+
+```{r}
+  ggplot() +
+    geom_sf(data = pop_region_3338, mapping = aes(fill = totalpop)) +
+    geom_sf(data = pop_3338, mapping = aes(), size = 0.5) +
+    geom_sf(data = rivers_3338, mapping = aes(size = StrOrder), color = "black") +
+    scale_size(range = c(0.01, 0.2), guide = F) +
+    theme_bw() +
+    labs(fill = "Total population") + 
+    scale_fill_continuous(low = "khaki", high = "firebrick", labels = comma)
+```
+
+```{r}
+  write_sf(pop_region_3338, "data/shapefiles/ak_region_population.shp")
+```
+
